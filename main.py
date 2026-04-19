@@ -4,24 +4,21 @@ import random
 app = Flask(__name__)
 @app.route('/')
 def home():
-    co2_ambiente = random.uniform(400, 450)
-    co2_vacunos = random.uniform(500, 700)
-    captura_interna = random.uniform(5.5, 12.8)
-    balance = (co2_vacunos + co2_ambiente) - (captura_interna * 10)
+    ref_ambiental = 412.0  # CO2 base del planeta hoy
+    sensor_potrero = ref_ambiental + random.uniform(50, 150)
+    sensor_inv_entrada = ref_ambiental + random.uniform(5, 10)
+    sensor_inv_salida = sensor_inv_entrada - random.uniform(30, 60)
+    puro_vacunos = sensor_potrero - ref_ambiental
+    captura_neta = sensor_inv_entrada - sensor_inv_salida
     html = f"""
-    <body style='background:#000; color:#0f0; font-family:monospace; padding:30px; line-height:1.6;'>
-        <h1 style='color:#fff; border-bottom:1px solid #0f0;'> [SISTEMA N.O.V.A. - MONITOR MULTI-SENSOR]</h1>
-        <div style='border:1px solid #333; padding:15px; background:#050505;'>
-            <p><b>[ENTORNO EXTERIOR]</b></p>
-            <p> > CO2 ATMOSFERICO: {co2_ambiente:.2f} ppm</p>
-            <p> > EMISION VACUNOS: {co2_vacunos:.2f} ppm</p>
-        <hr style='border:0.5px dashed #333;'>
-            <p><b>[SISTEMA INVERNADERO]</b></p>
-            <p> > CAPTURA ACTIVA: {captura_interna:.2f} kg/dia</p>
-            <p> > BALANCE NETO: {balance:.2f} pts</p>
+    <body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'>
+        <h1 style='color:cyan;'> [N.O.V.A. - AUDITORIA DE CARBONO]</h1>
+        <div style='border:2px solid cyan; padding:15px;'>
+            <p>Ref. Ambiental Base: {ref_ambiental} ppm</p>
+            <p>Aporte Real Vacunos: +{puro_vacunos:.2f} ppm</p>
+            <p style='color:#fff;'>Captura Real Invernadero: -{captura_neta:.2f} ppm</p>
         </div>
-        <br>
-        <marquee scrollamount='3'> >>> ANALIZANDO FLUJO DE GASES... OPTIMIZANDO CAPTURA DE CARBONO... </marquee>
+        <p><small>Metodo: Diferencial de Gradiente NDIR</small></p>
     </body>"""
     return html
 if __name__ == "__main__":
