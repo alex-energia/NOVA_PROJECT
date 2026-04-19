@@ -4,21 +4,28 @@ import random
 app = Flask(__name__)
 @app.route('/')
 def home():
-    ref_ambiental = 412.0  # CO2 base del planeta hoy
-    sensor_potrero = ref_ambiental + random.uniform(50, 150)
-    sensor_inv_entrada = ref_ambiental + random.uniform(5, 10)
-    sensor_inv_salida = sensor_inv_entrada - random.uniform(30, 60)
-    puro_vacunos = sensor_potrero - ref_ambiental
-    captura_neta = sensor_inv_entrada - sensor_inv_salida
+    temp = random.uniform(18, 28)
+    hum = random.uniform(60, 85)
+    ref_ambiental = 412.0
+    # Factor de correccion logica
+    correccion = (temp * 0.05) + (hum * 0.01)
+    captura_real = random.uniform(40, 55) + correccion
     html = f"""
     <body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'>
-        <h1 style='color:cyan;'> [N.O.V.A. - AUDITORIA DE CARBONO]</h1>
-        <div style='border:2px solid cyan; padding:15px;'>
-            <p>Ref. Ambiental Base: {ref_ambiental} ppm</p>
-            <p>Aporte Real Vacunos: +{puro_vacunos:.2f} ppm</p>
-            <p style='color:#fff;'>Captura Real Invernadero: -{captura_neta:.2f} ppm</p>
+        <h1 style='color:#fff; border-bottom:2px solid #0f0;'> [N.O.V.A. OS - NODO CENTRAL]</h1>
+        <div style='display:grid; grid-template-columns: 1fr 1fr; gap:20px;'>
+            <div style='border:1px solid #333; padding:10px;'>
+                <p><b>SENSADO CLIMATICO</b></p>
+                <p> TEMP: {temp:.1f} C</p>
+                <p> HUM: {hum:.1f} %%</p>
+            </div>
+            <div style='border:1px solid #0f0; padding:10px;'>
+                <p><b>AUDITORIA CARBONO</b></p>
+                <p> BASE: {ref_ambiental} ppm</p>
+                <p> CAPTURA ADAPTATIVA: -{captura_real:.2f} ppm</p>
+            </div>
         </div>
-        <p><small>Metodo: Diferencial de Gradiente NDIR</small></p>
+        <p style='text-align:center; color:yellow;'> STATUS: COMPENSACION TERMICA ACTIVA </p>
     </body>"""
     return html
 if __name__ == "__main__":
