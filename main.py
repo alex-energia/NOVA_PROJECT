@@ -6,48 +6,51 @@ chat_history = []
 @app.route('/', methods=['GET', 'POST']) 
 def home(): 
     global chat_history 
-    t, c = random.uniform(22, 26), random.uniform(410, 430) 
-    biomasa_fv = random.uniform(1.5, 2.2) 
+    t, c = random.uniform(23.5, 25.8), random.uniform(412, 428) 
+    biom = random.uniform(1.8, 2.5) 
     if request.method == 'POST': 
         u_m = request.form.get('msg') 
-        chat_history.append((u_m, "NOVA_AI: Generando reporte estrategico...")) 
+        chat_history.append((u_m, "NOVA_AI: Accediendo a base de datos de ingenieria...")) 
     h = "<html><body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'>" 
-    h += "<button onclick='document.getElementById(\"modal\").style.display=\"block\"' style='position:fixed; top:20px; right:20px; background:yellow; color:black; padding:15px; border:4px solid #fff; font-weight:bold; cursor:pointer; z-index:1000;'>VER EXPEDIENTE DE INVERSION</button>" 
-    h += "<div id=\"modal\" style='display:none; position:fixed; top:2%; left:2%; width:96%; height:96%; background:#000; color:white; padding:40px; border:3px solid yellow; overflow-y:scroll; z-index:2000; font-size:14px;'>" 
-    h += "<button onclick='this.parentElement.style.display=\"none\"' style='float:right; background:red; color:white; padding:15px; font-weight:bold;'>CERRAR [X]</button>" 
-    h += "<h2 style=\"color:yellow; text-align:center;\">N.O.V.A. - DOSSIER MAESTRO PARA INVERSIONISTAS</h2><hr style='border:1px solid yellow;'>" 
-    h += "<div style='display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:20px;'>" 
-    h += "<div><h3 style='color:cyan;'>[1. GRAFICA DE PROYECCION FINANCIERA (ROI)]</h3>" 
-    h += "<pre style='font-size:12px; line-height:1.2; background:#080808; padding:10px;'>ROI_18M:    ^\\nPROYECCION_RENTABILIDAD:    ^\\n(Millones USD)  |         _--*\\n   3.0 -        |      _-*\\n   2.0 -        |   _-*\\n   1.0 -        |_-*\\n   0.0 -  ______|___________>\\n          Start  12M    24M\\n>> Inversion Inicial: $1.2M USD.\\n>> ROI Estimado: 18 Meses.</pre>" 
-    h += "<h3 style='color:cyan; margin-top:20px;'>[2. VIABILIDAD TECNICA]</h3><p>Optimizaci¢n energetica MPPT Solar, hardware ESP32 con Deep Sleep y sensores NDIR. Reduce insumos externos 85% y agua 90%. Ecosistema 100% robotizado.</p></div>" 
-    h += "<div><h3 style='color:cyan;'>[3. MECATRONICA VERTICAL (GREEN-CORE)]</h3>" 
-    h += "<pre style='font-size:12px; line-height:1.2; background:#080808; padding:10px;'>      (Cosecha) -> [###]\\n      [###] <- (Dia 7: Final)\\n      [###]\\nRAIL  [###] <- (Dia 4: Crecimiento)\\nSYSTEM [###]\\n      [###]\\n      [###] <- (Dia 1: Siembra: Robot Alpha)</pre>" 
-    h += "<p>Invernadero vertical automatizado. Rieles motorizados NEMA 23 desplazan bandejas optimizando espacio y gestionando fotoperiodo.</p></div>" 
-    h += "<div><h3 style='color:cyan;'>[4. SANIDAD ANIMAL Y BIOTECNOLOGIA]</h3><pre style='font-size:12px; line-height:1.2; background:#080808; padding:10px;'>     (Metabolismo Animal)\\n       |       \\n [Consumo FVH] -> [Cambio PH transpiracion]\\n       |              ^\\n       |         [Repelencia Garrapatas]\\n     (Output CO2) -> -40% (Metano)</pre>" 
-    h += "<p>El FVH enriquecido actua como repelente sistemico natural, eliminando quimicos toxicos. Optimiza fermentacion ruminal reduciendo CO2 y metano 40%.</p></div>" 
-    h += "<div><h3 style='color:cyan;'>[5. FLUJO DE FINANCIACION (BONOS VERDES)]</h3><pre style='font-size:12px; line-height:1.2; background:#080808; padding:10px;'>    (Medicion NDIR) -> (Validacion Digital)\\n        |                    |\\n[Dato crudo CO2] -> [Certificado Bono Carbono] -> [Venta Mercado Int.]</pre>" 
-    h += "<p>Cada tonelada capturada se registra en un ledger digital. Los Carbon Credits financian el 60% de los costos operativos, blindando la rentabilidad.</p></div></div>" 
-    h += "<div style='background:#111; padding:20px; border:1px solid yellow; margin-top:30px;'><h3 style='color:yellow; text-align:center;'>SECRETO INDUSTRIAL DE SIEMBRA (STEP-BY-STEP)</h3>" 
-    h += "<p style='text-align:center;'>1-Ozonado (O3) | 2-Nutricion Mineral y Organica | 3-Siembra Robot Alpha | 4-Germinacion Controlada | 5-Crecimiento LED Espectro Completo.</p></div></div>" 
-    h += "<h1 style='color:yellow;'> [N.O.V.A. - DASHBOARD CENTRAL DE MANDO]</h1>" 
+    h += "<button onclick='document.getElementById(\"modal\").style.display=\"block\"' style='position:fixed; top:20px; right:20px; background:yellow; color:black; padding:15px; border:4px solid #fff; font-weight:bold; cursor:pointer; z-index:1000;'>ABRIR DOSSIER DE INVERSION ESTRATEGICA</button>" 
+    h += "<div id=\"modal\" style='display:none; position:fixed; top:2%; left:2%; width:96%; height:96%; background:#050505; color:white; padding:40px; border:3px solid yellow; overflow-y:scroll; z-index:2000;'>" 
+    h += "<button onclick='this.parentElement.style.display=\"none\"' style='float:right; background:red; color:white; padding:10px; border:none; cursor:pointer;'>CERRAR [X]</button>" 
+    h += "<h1 style='color:yellow; text-align:center;'>N.O.V.A. - INFORME TECNICO DE ALTO NIVEL</h1><hr style='border:1px solid #333;'>" 
+    h += "<div style='display:grid; grid-template-columns:1fr 1fr; gap:30px;'>" 
+    h += "<div><h2 style='color:cyan;'>[1. PROTOCOLO DE SIEMBRA ROBOTIZADA]</h2>" 
+    h += "<p><b>Paso 1:</b> Desinfeccion mediante Ozono (O3) para eliminar patogenos sin quimicos.</p>" 
+    h += "<p><b>Paso 2:</b> Preparacion del sustrato hidroponico con sales minerales, aminoacidos y extractos de neem/ajo (Repelente sistemico).</p>" 
+    h += "<p><b>Paso 3:</b> Robot Alpha realiza siembra neumatica con una densidad de 1.2kg/bandeja.</p>" 
+    h += "<p><b>Paso 4:</b> Germinacion en camara oscura con humedad del 95 por ciento.</p>" 
+    h += "<p><b>Paso 5:</b> Cosecha automatizada al dia 7 mediante brazos mecanicos.</p></div>" 
+    h += "<div><h2 style='color:cyan;'>[2. VIABILIDAD Y RENTABILIDAD (ROI)]</h2>" 
+    h += "<pre style='background:#111; padding:10px; color:yellow;'>ROI ESTIMADO: 18 MESES\\nRentabilidad: 32 por ciento anual.\\nAhorro en suplementos: 85 por ciento.\\nIncremento peso animal: 22 por ciento.</pre>" 
+    h += "<p>La viabilidad se sustenta en la autonomia energetica y la eliminacion de la cadena de suministro externa de forraje.</p></div>" 
+    h += "<div><h2 style='color:cyan;'>[3. BIOTECNOLOGIA: EFECTO REPELENTE]</h2>" 
+    h += "<p>El forraje NOVA no es solo alimento. Al estar enriquecido con compuestos organicos durante la siembra, el animal al ingerirlo modifica el olor de su transpiracion de forma imperceptible para humanos pero letal para moscas y garrapatas. <b>Reduccion del 90 por ciento en uso de ivermectinas.</b></p></div>" 
+    h += "<div><h2 style='color:cyan;'>[4. AUDITORIA DE CARBONO (BONOS VERDES)]</h2>" 
+    h += "<p>Nuestros sensores NDIR en potrero miden el balance neto. El animal alimentado con FVH emite 40 por ciento menos metano. Estos datos se certifican y se venden como Bonos de Carbono, pagando gran parte de la operacion.</p></div>" 
+    h += "</div><h2 style='color:yellow; border-top:1px solid #333; padding-top:20px;'>[5. INVERNADERO VERTICAL ROBOTIZADO]</h2>" 
+    h += "<p>Sistema modular con 10 niveles de produccion. Los rieles motorizados mueven las bandejas hacia la luz LED de espectro completo, simulando el ciclo solar perfecto los 365 dias del a¤o.</p></div>" 
+    h += "<h1 style='color:yellow;'> [N.O.V.A. - DASHBOARD CENTRAL]</h1>" 
     h += "<div style='display:grid; grid-template-columns:1fr 1fr; gap:20px; border:2px solid #0f0; padding:20px; background:#050505;'>" 
-    h += f"<p> >> TEMP_NODO_CENTRAL: {t:.1f}C</p><p> >> CO2_AMBIENTAL: {c:.2f} ppm</p>" 
-    h += f"<p style='color:yellow;'> >> CAPTURA_FORRAJE (DIA 7): -{biomasa_fv * 12:.1f} ppm</p><p> >> BIOMASA_POR_BANDEJA: {biomasa_fv:.2f} kg</p>" 
+    h += f"<div><p style='color:cyan;'>METRICAS DE CAMPO (FIELD-LINK)</p><p> >> CO2 POTRERO: {c:.2f} ppm</p><p> >> NODOS LORA: 5 ACTIVOS</p></div>" 
+    h += f"<div><p style='color:cyan;'>METRICAS INVERNADERO (GREEN-CORE)</p><p> >> TEMP: {t:.1f} C</p><p style='color:yellow;'> >> BIOMASA: {biom:.2f} KG/B</p></div>" 
     h += "</div><div style='display:flex; gap:20px; margin:20px 0;'>" 
-    h += "<a href='/invernadero' style='flex:1; padding:20px; border:2px solid #0f0; text-decoration:none; color:#0f0; text-align:center;'><h2>GREEN-CORE</h2><p>Forraje y Robotica</p></a>" 
-    h += "<a href='/campo' style='flex:1; padding:20px; border:2px solid cyan; text-decoration:none; color:cyan; text-align:center;'><h2>FIELD-LINK</h2><p>CO2 Potrero y LoRa</p></a>" 
+    h += "<a href='/invernadero' style='flex:1; padding:20px; border:2px solid #0f0; text-decoration:none; color:#0f0; text-align:center;'><h2>ACCEDER GREEN-CORE</h2></a>" 
+    h += "<a href='/campo' style='flex:1; padding:20px; border:2px solid cyan; text-decoration:none; color:cyan; text-align:center;'><h2>ACCEDER FIELD-LINK</h2></a>" 
     h += "</div><div style='border:1px solid #444; padding:15px; background:#080808;'>" 
-    h += "<h3 style='color:yellow;'>CHAT EXPERTO CENTRAL</h3>" 
-    h += "<div style='height:150px; overflow-y:scroll;'>{% for u, r in history %}<p><b>U:</b> {{u}}<br><span style='color:yellow;'><b>N:</b> {{r}}</span></p><hr style='border:0.1px solid #222;'>{% endfor %}</div>" 
-    h += "<form method='post' style='display:flex; gap:10px; margin-top:10px;'><input name='msg' style='flex-grow:1; padding:10px;'><button>ENVIAR</button></form></div></body></html>" 
+    h += "<h3>SISTEMA DE CONSULTA NOVA AI</h3>" 
+    h += "<div style='height:100px; overflow-y:scroll;'>{% for u, r in history %}<p><b>U:</b> {{u}}<br><span style='color:yellow;'><b>N:</b> {{r}}</span></p>{% endfor %}</div>" 
+    h += "<form method='post' style='display:flex; gap:10px; margin-top:10px;'><input name='msg' style='flex-grow:1; background:#000; color:#0f0; border:1px solid #0f0;'><button style='background:#0f0; color:#000; font-weight:bold;'>ENVIAR</button></form></div></body></html>" 
     return render_template_string(h, history=chat_history) 
 @app.route('/invernadero') 
 def invernadero(): 
-    h = "<html><body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'><a href='/' style='color:yellow; text-decoration:none;'><- VOLVER</a><h1>[GREEN-CORE: MODULO DE FORRAJE]</h1><p>Robot Alpha: Ejecutando siembra de precision...</p></body></html>" 
+    h = "<html><body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'><a href='/' style='color:yellow;'><- VOLVER</a><h1>[DETALLE GREEN-CORE]</h1><p>Monitoreo de biomasa y control de riego nebulizado activo...</p></body></html>" 
     return render_template_string(h) 
 @app.route('/campo') 
 def campo(): 
-    h = "<html><body style='background:#000; color:cyan; font-family:monospace; padding:30px;'><a href='/' style='color:yellow; text-decoration:none;'><- VOLVER</a><h1>[FIELD-LINK: AUDITORIA EXTERIOR]</h1><p>Escaneando nodos LoRa en Deep Sleep...</p></body></html>" 
+    h = "<html><body style='background:#000; color:cyan; font-family:monospace; padding:30px;'><a href='/' style='color:yellow;'><- VOLVER</a><h1>[DETALLE FIELD-LINK]</h1><p>Escaneo diferencial de CO2 ambiental activo...</p></body></html>" 
     return render_template_string(h) 
 if __name__ == "__main__": 
     port = int(os.environ.get("PORT", 10000)) 
