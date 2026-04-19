@@ -1,33 +1,15 @@
-import os
-from flask import Flask, render_template_string
-import random
-app = Flask(__name__)
-@app.route('/')
-def home():
-    temp = random.uniform(18, 28)
-    hum = random.uniform(60, 85)
-    ref_ambiental = 412.0
-    # Factor de correccion logica
-    correccion = (temp * 0.05) + (hum * 0.01)
-    captura_real = random.uniform(40, 55) + correccion
-    html = f"""
-    <body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'>
-        <h1 style='color:#fff; border-bottom:2px solid #0f0;'> [N.O.V.A. OS - NODO CENTRAL]</h1>
-        <div style='display:grid; grid-template-columns: 1fr 1fr; gap:20px;'>
-            <div style='border:1px solid #333; padding:10px;'>
-                <p><b>SENSADO CLIMATICO</b></p>
-                <p> TEMP: {temp:.1f} C</p>
-                <p> HUM: {hum:.1f} %%</p>
-            </div>
-            <div style='border:1px solid #0f0; padding:10px;'>
-                <p><b>AUDITORIA CARBONO</b></p>
-                <p> BASE: {ref_ambiental} ppm</p>
-                <p> CAPTURA ADAPTATIVA: -{captura_real:.2f} ppm</p>
-            </div>
-        </div>
-        <p style='text-align:center; color:yellow;'> STATUS: COMPENSACION TERMICA ACTIVA </p>
-    </body>"""
-    return html
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+import os 
+from flask import Flask, render_template_string 
+import random 
+app = Flask(__name__) 
+@app.route('/') 
+def home(): 
+    t = random.uniform(22, 26) 
+    c = random.uniform(45, 52) 
+    h = [random.randint(30, 60) for _ in range(5)] 
+    b = " ".join([f"[#{'#' * (i // 10)}{'.' * (6 - h // 10)}]" for i in h]) 
+    html = f"^<body style='background:#000; color:#0f0; font-family:monospace; padding:30px;'^>^<h1 style='color:yellow;'^> [N.O.V.A. - ANALISIS DE TENDENCIA]^</h1^>^<div style='border:1px solid #444; padding:20px; background:#0a0a0a;'^>^<p^> TEMP: {t:.1f}C -- CAPTURA: {c:.2f} ppm^</p^>^<hr style='border:0.1px solid #333;'^>^<p style='letter-spacing:5px; color:cyan;'^> {b} ^</p^>^<p^>^<small^> T-5h   T-4h   T-3h   T-2h   T-1h ^</small^>^</p^>^</div^>^<p style='color:#666;'^> REGISTRO FLASH: ACTIVO ^</p^>^</body^>" 
+    return html 
+if __name__ == "__main__": 
+    port = int(os.environ.get("PORT", 10000)) 
+    app.run(host="0.0.0.0", port=port) 
