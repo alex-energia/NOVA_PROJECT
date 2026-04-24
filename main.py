@@ -6,33 +6,42 @@ app = Flask(__name__)
 class ControladorNOVA:
     def __init__(self):
         self.reset()
+        self.standby = True  # Inicia en modo espera (Todo en 0)
 
     def reset(self):
         self.dia = 0
-        self.batch_id = f"NOVA-B28-{random.randint(1000,9999)}"
-        # SCADA Expandido
+        self.standby = True
+        self.batch_id = f"NOVA-X29-{random.randint(1000,9999)}"
+        # SCADA Completo
         self.inv = {
-            "ph": 5.8, "ce": 1.4, "vpd": 1.1, "co2": 450, 
-            "temp_aire": 24.5, "hum_rel": 65, "luz_par": 850
+            "ph": 0.0, "ce": 0.0, "vpd": 0.0, "co2": 0.0, 
+            "par": 0, "o2_dis": 0.0, "temp": 0.0, "hum_rel": 0
         }
-        # La Joya Expandida (Carbono y Potrero)
+        # La Joya Completa
         self.pot = {
-            "co2_cap": 0.0, "co2_suelo": 850, "hum_10": 24, 
-            "rad_global": 620, "eficiencia_foto": 92, "biomasa_estimada": 0,
-            "flujo_carbono": 0.52
+            "co2_cap": 0.0, "co2_suelo": 0, "ch4": 0.0, 
+            "h10": 0, "h30": 0, "h60": 0, "rad": 0, "ndvi": 0.0
         }
-        self.mezcla = "Maíz (80%) + Cebada (15%) + Avena (5%)"
+        self.h = 0.0
+        self.p = 0.0
+        self.mezcla = "---"
 
     def update(self):
-        if self.dia < 7:
+        if self.standby:
+            self.standby = False
+            self.dia = 0
+            # Valores iniciales Día 0
+            self.inv.update({"ph": 5.8, "ce": 1.2, "vpd": 0.8, "co2": 420, "par": 400, "o2_dis": 8.5, "temp": 22.0, "hum_rel": 70})
+            self.pot.update({"co2_suelo": 820, "h10": 25, "h30": 20, "h60": 18, "rad": 450, "ndvi": 0.65})
+            self.mezcla = "80% Maíz + 15% Cebada + 5% Avena"
+        elif self.dia < 7:
             self.dia += 1
-            # Crecimiento real
-            self.h = round(self.dia * 4.3, 1) if self.dia > 0 else 0.5
-            self.p = round(12.0 + (self.dia * 10.5), 1)
-            # Incremento en la Joya
-            self.pot["co2_cap"] = round(self.dia * 6.1, 2)
-            self.pot["biomasa_estimada"] = round(self.p * 0.85, 2)
-            self.pot["eficiencia_foto"] = min(99, 92 + self.dia)
+            self.h = round(self.dia * 4.4, 1)
+            self.p = round(12.0 + (self.dia * 10.8), 1)
+            # Incrementales de la Joya
+            self.pot["co2_cap"] = round(self.dia * 6.25, 2)
+            self.pot["ndvi"] = min(0.95, 0.65 + (self.dia * 0.04))
+            self.inv["co2"] += random.randint(-10, 10)
         else:
             self.reset()
 
@@ -40,55 +49,56 @@ ctrl = ControladorNOVA()
 
 @app.route('/')
 def index():
-    if request.args.get('reset'): ctrl.reset()
-    return render_template_string(HTML_COMPLETO, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, bid=ctrl.batch_id, mez=ctrl.mezcla, h=getattr(ctrl, 'h', 0.5), p=getattr(ctrl, 'p', 12))
+    return render_template_string(HTML_V29, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, bid=ctrl.batch_id, mez=ctrl.mezcla, h=ctrl.h, p=ctrl.p, standby=ctrl.standby)
 
 @app.route('/next')
 def next_step():
     ctrl.update()
-    return render_template_string(HTML_COMPLETO, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, bid=ctrl.batch_id, mez=ctrl.mezcla, h=ctrl.h, p=ctrl.p)
+    return render_template_string(HTML_V29, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, bid=ctrl.batch_id, mez=ctrl.mezcla, h=ctrl.h, p=ctrl.p, standby=ctrl.standby)
 
-# Fragmentación del HTML para evitar errores de búfer en Render
+# HTML Estructurado para máxima estabilidad en Render
 P1 = """
-<!DOCTYPE html><html><head><title>NOVA v28 | Professional SCADA</title>
+<!DOCTYPE html><html><head><title>NOVA v29 | Industrial SCADA</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
     body { margin: 0; background: #000; color: #00ffcc; font-family: 'Roboto Mono', monospace; overflow: hidden; }
-    .hud { position: absolute; background: rgba(0,20,20,0.95); border: 2px solid #00ffcc; padding: 20px; z-index: 100; box-shadow: 0 0 25px rgba(0,255,204,0.3); }
-    #left { top: 20px; left: 20px; width: 380px; border-left: 6px solid #00ffcc; }
-    #right { top: 20px; right: 20px; width: 350px; border-right: 6px solid #ffd700; }
-    .title { font-weight: 700; font-size: 14px; margin-bottom: 15px; color: #fff; text-transform: uppercase; border-bottom: 1px solid #00ffcc; padding-bottom: 5px; }
-    .data { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.1); }
+    .hud { position: absolute; background: rgba(0,10,10,0.9); border: 1px solid #00ffcc; padding: 15px; z-index: 100; box-shadow: 0 0 20px rgba(0,255,204,0.2); }
+    #left { top: 10px; left: 10px; width: 400px; }
+    #right { top: 10px; right: 10px; width: 380px; border-right: 4px solid #ffd700; }
+    .title { font-weight: 700; font-size: 13px; margin-bottom: 10px; color: #fff; text-transform: uppercase; border-bottom: 1px solid #333; }
+    .data { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
     .val { color: #fff; font-weight: bold; }
     .joya-val { color: #ffd700; font-weight: bold; }
-    #btn-container { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 200; }
-    button { background: #00ffcc; color: #000; border: none; padding: 20px 60px; font-weight: 900; font-family: 'Roboto Mono'; cursor: pointer; font-size: 16px; box-shadow: 0 0 20px #00ffcc; transition: 0.3s; }
-    button:hover { background: #fff; transform: scale(1.05); }
+    #controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 200; }
+    button { background: #00ffcc; color: #000; border: none; padding: 15px 50px; font-weight: 900; font-family: 'Roboto Mono'; cursor: pointer; font-size: 14px; box-shadow: 0 0 15px #00ffcc; transition: 0.2s; }
+    button:hover { background: #fff; scale: 1.05; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script></head><body>
 """
 
 P2 = """
 <div id="left" class="hud">
-    <div class="title">SCADA INVERNADERO | {{ bid }}</div>
-    <div class="data">DÍA DEL CICLO: <span class="val">{{ d }} / 7</span></div>
-    <div class="data">ALTURA BIOMASA: <span class="val">{{ h }} CM</span></div>
-    <div class="data">PESO NETO LOTE: <span class="val">{{ p }} KG</span></div>
+    <div class="title">SCADA INVERNADERO BIOMASA | {{ bid }}</div>
+    <div class="data">DÍA: <span class="val">{{ d if not standby else 0 }}</span></div>
+    <div class="data">ALTURA: <span class="val">{{ h }} CM</span></div>
+    <div class="data">PESO: <span class="val">{{ p }} KG</span></div>
     <div class="data">PH / CE: <span class="val">{{ inv.ph }} / {{ inv.ce }} mS</span></div>
-    <div class="data">VPD: <span class="val">{{ inv.vpd }} kPa</span></div>
-    <div class="data">TEMP / HUM: <span class="val">{{ inv.temp_aire }}°C / {{ inv.hum_rel }}%</span></div>
+    <div class="data">VPD / CO2: <span class="val">{{ inv.vpd }} / {{ inv.co2 }} PPM</span></div>
+    <div class="data">RADIACIÓN PAR: <span class="val">{{ inv.par }} µmol/m²</span></div>
+    <div class="data">O2 DISUELTO: <span class="val">{{ inv.o2_dis }} mg/L</span></div>
+    <div class="data">TEMP/HUM: <span class="val">{{ inv.temp }}°C / {{ inv.hum_rel }}%</span></div>
     <div class="data">MEZCLA: <span class="val">{{ mez }}</span></div>
 </div>
 <div id="right" class="hud">
-    <div class="title" style="color:#ffd700">LA JOYA: MONITOR DE CARBONO</div>
-    <div class="data">CO2 CAPTURADO: <span class="joya-val">{{ pot.co2_cap }} KG</span></div>
-    <div class="data">FLUJO CARBONO: <span class="joya-val">{{ pot.flujo_carbono }} mg/s</span></div>
-    <div class="data">EFICIENCIA FOTO: <span class="val">{{ pot.eficiencia_foto }} %</span></div>
-    <div class="data">CO2 SUELO/AMB: <span class="val">{{ pot.co2_suelo }} / {{ inv.co2 }} PPM</span></div>
-    <div class="data">RAD. GLOBAL: <span class="val">{{ pot.rad_global }} W/m²</span></div>
-    <div class="data">HUM. MATRIZ: <span class="val">{{ pot.hum_10 }} %</span></div>
+    <div class="title" style="color:#ffd700">LA JOYA: ECO-SISTEMA & CARBONO</div>
+    <div class="data">CAPTURA CO2: <span class="joya-val">{{ pot.co2_cap }} KG</span></div>
+    <div class="data">CO2 SUELO: <span class="val">{{ pot.co2_suelo }} PPM</span></div>
+    <div class="data">METANO (CH4): <span class="val">{{ pot.ch4 }} mg/m³</span></div>
+    <div class="data">HUM. SUELO (10/30/60): <span class="val">{{ pot.h10 }}/{{ pot.h30 }}/{{ pot.h60 }}%</span></div>
+    <div class="data">RAD. GLOBAL: <span class="val">{{ pot.rad }} W/m²</span></div>
+    <div class="data">ÍNDICE NDVI: <span class="val">{{ pot.ndvi }}</span></div>
 </div>
-<div id="btn-container"><button onclick="location.href='/next'">{{ "INICIAR DESPACHO" if d == 7 else "AVANZAR DÍA" }}</button></div>
+<div id="controls"><button onclick="location.href='/next'">{{ "INICIAR SISTEMA" if standby else ("DESPACHAR" if d == 7 else "AVANZAR DÍA") }}</button></div>
 """
 
 P3 = """
@@ -99,68 +109,60 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const tower = new THREE.Group();
+// ILUMINACIÓN CONSTANTE PARA LA TORRE
+const towerGroup = new THREE.Group();
 const floors = []; const doors = [];
-const frameMat = new THREE.MeshStandardMaterial({color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5, wireframe: true});
-const glassMat = new THREE.MeshStandardMaterial({color: 0x00ffff, transparent: true, opacity: 0.3, emissive: 0x00ffff, emissiveIntensity: 0.4});
+const glowMat = new THREE.MeshBasicMaterial({color: 0x00ffcc, wireframe: true});
+const glassMat = new THREE.MeshBasicMaterial({color: 0x00ffff, transparent: true, opacity: 0.15});
 
 for(let i=0; i<10; i++){
     const h = i * 7 - 25;
-    const f = new THREE.Mesh(new THREE.BoxGeometry(14, 0.2, 14), frameMat); f.position.y = h;
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(12, 0.6, 12), new THREE.MeshStandardMaterial({color: 0x050505, emissive: 0x00ffcc, emissiveIntensity: 0.1})); 
+    // Estructura auto-iluminada (MeshBasic no necesita luces)
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(15, 0.2, 15), glowMat);
+    frame.position.y = h;
+    
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(13, 0.5, 13), new THREE.MeshBasicMaterial({color: 0x111111}));
     tray.position.y = h + 0.3;
     
-    // EVOLUCIÓN DE SEMILLA
-    const gH = ({{ d }} * 1.0) + 0.2;
-    let bCol = 0xffaa00; // Día 0: Maíz
-    if ({{ d }} > 0 && {{ d }} < 3) bCol = 0xbfff00; // Germinando
-    if ({{ d }} >= 3) bCol = 0x00ff44; // Maduro
+    // EVOLUCIÓN VISUAL
+    let bioColor = 0x5c4033; // Tierra/Maíz
+    if ({{ d }} > 0 && {{ d }} < 3) bioColor = 0xbfff00;
+    if ({{ d }} >= 3) bioColor = 0x00ff44;
     
-    const grass = new THREE.Mesh(new THREE.BoxGeometry(11.5, gH, 11.5), 
-        new THREE.MeshStandardMaterial({
-            color: bCol, 
-            emissive: ({{d}} > 4 ? 0xff4400 : 0x000000), 
-            emissiveIntensity: 0.3
-        }));
+    const gH = ({{ d }} * 1.2) + 0.3;
+    const grass = new THREE.Mesh(new THREE.BoxGeometry(12, gH, 12), new THREE.MeshBasicMaterial({color: bioColor}));
     grass.position.y = h + 0.3 + gH/2;
+    if ({{ standby }} == true) grass.visible = false;
+
+    const dL = new THREE.Mesh(new THREE.BoxGeometry(7, 6.8, 0.1), glassMat); dL.position.set(-3.7, h+3.6, 7.5);
+    const dR = new THREE.Mesh(new THREE.BoxGeometry(7, 6.8, 0.1), glassMat); dR.position.set(3.7, h+3.6, 7.5);
     
-    const dL = new THREE.Mesh(new THREE.BoxGeometry(6.8, 6.5, 0.1), glassMat); dL.position.set(-3.5, h+3.5, 7);
-    const dR = new THREE.Mesh(new THREE.BoxGeometry(6.8, 6.5, 0.1), glassMat); dR.position.set(3.5, h+3.5, 7);
-    
-    tower.add(f, tray, grass, dL, dR); floors.push(h); doors.push({L: dL, R: dR});
+    towerGroup.add(frame, tray, grass, dL, dR);
+    floors.push(h); doors.push({L: dL, R: dR});
 }
-scene.add(tower);
-scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+scene.add(towerGroup);
 
-// ROBÓTICA Y LOGÍSTICA
-const robot = new THREE.Group();
-const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 10), new THREE.MeshStandardMaterial({color: 0xff00ff, emissive: 0xff00ff}));
-robot.add(arm); scene.add(robot); robot.visible = false;
-
-const animal = new THREE.Group();
-const body = new THREE.Mesh(new THREE.CapsuleGeometry(1.5, 3, 10, 20), new THREE.MeshStandardMaterial({color: 0x3d2b1f}));
-body.rotation.z = Math.PI/2; animal.add(body);
-animal.position.set(80, -25, 0); scene.add(animal);
-
-const belt = new THREE.Mesh(new THREE.BoxGeometry(100, 0.5, 10), new THREE.MeshStandardMaterial({color: 0x111111}));
-belt.position.set(50, -30, 0); scene.add(belt);
+// ROBOT Y ELEMENTOS EXTERNOS
+const animal = new THREE.Mesh(new THREE.BoxGeometry(5,3,2), new THREE.MeshBasicMaterial({color: 0x442200}));
+animal.position.set(90, -30, 0); scene.add(animal);
+const trayH = new THREE.Mesh(new THREE.BoxGeometry(6,0.3,6), new THREE.MeshBasicMaterial({color:0x00ff44}));
+trayH.position.set(10, -30, 0); trayH.visible = ({{d}}==7); scene.add(trayH);
 
 function animate() {
     requestAnimationFrame(animate);
     const t = Date.now() * 0.001;
-    
-    if ({{ d }} == 0) {
-        camera.position.lerp(new THREE.Vector3(120, 60, 120), 0.05); camera.lookAt(0,0,0);
+    if ({{ standby }} == true) {
+        camera.position.lerp(new THREE.Vector3(150, 80, 150), 0.05);
+        camera.lookAt(0,0,0);
     } else if ({{ d }} < 7) {
         const ty = floors[{{ d }}];
-        camera.position.lerp(new THREE.Vector3(-35, ty + 12, 35), 0.05); camera.lookAt(0, ty, 0);
-        // Puertas abren al máximo
-        doors[{{ d }}].L.position.x = -12; doors[{{ d }}].R.position.x = 12;
+        camera.position.lerp(new THREE.Vector3(-40, ty + 15, 40), 0.05);
+        camera.lookAt(0, ty, 0);
+        doors[{{ d }}].L.position.x = -15; doors[{{ d }}].R.position.x = 15;
     } else {
-        // CICLO 7: ZOOM OUT NATURAL Y DESPACHO
-        camera.position.lerp(new THREE.Vector3(140, 30, 80), 0.02); camera.lookAt(60, -20, 0);
-        robot.visible = true; robot.position.set(10, -10 + Math.sin(t*5)*5, 0);
-        if(animal.position.x > 65) animal.position.x -= 0.25;
+        camera.position.lerp(new THREE.Vector3(160, 40, 100), 0.03);
+        camera.lookAt(70, -20, 0);
+        if(animal.position.x > 70) animal.position.x -= 0.3;
     }
     renderer.render(scene, camera);
 }
@@ -168,7 +170,7 @@ animate();
 </script></body></html>
 """
 
-HTML_COMPLETO = P1 + P2 + P3
+HTML_V29 = P1 + P2 + P3
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
