@@ -1,201 +1,151 @@
-import datetime
 import random
 from flask import Flask, render_template_string
 
 app = Flask(__name__)
 
-class SistemaCentralNOVA:
+class ControladorNOVA:
     def __init__(self):
-        self.batch_id = "B-PRO-001"
-        self.dia_ciclo = 0
-        self.presion_hidraulica = 45.0
-        self.nutrientes_ph = 6.0
-        self.nutrientes_ce = 1.8
-        # Trazabilidad de ingredientes (Día 0)
-        self.receta = {"Maíz": "105kg", "Cebada": "15kg", "Alfalfa": "5kg", "Quelatos": "2kg"}
-        # Mediciones Potrero
-        self.humedad_suelo = 22.5
-        self.temp_suelo = 24.0
-        self.carbono_suelo_ton = 142.5
+        self.dia = 0
+        self.lote = "NOVA-INSTR-001"
+        # Variables de Instrumentación Invernadero
+        self.sensores = {
+            "caudal": 1.2, "ph": 5.8, "ce": 1.8, "hum_aire": 85,
+            "lux": 12000, "co2_ppm": 450, "temp_agua": 18.5
+        }
+        # Variables de Instrumentación Potrero
+        self.campo = {
+            "hum_suelo": 22.1, "nitratos": 14.2, "carbono": 142.8
+        }
+        self.receta = {"Maiz": 105, "Cebada": 15, "Quelatos": 2}
 
-    def procesar(self):
-        self.dia_ciclo = (self.dia_ciclo + 1) if self.dia_ciclo < 8 else 0
-        self.presion_hidraulica = round(random.uniform(44.0, 46.0), 1)
-        self.nutrientes_ph = round(random.uniform(5.8, 6.2), 2)
-        self.nutrientes_ce = round(random.uniform(1.7, 1.9), 2)
-        self.humedad_suelo += random.uniform(-0.3, 0.3)
+    def update(self):
+        self.dia = (self.dia + 1) if self.dia < 7 else 0
+        self.sensores["caudal"] = round(random.uniform(1.1, 1.4), 2)
+        self.sensores["co2_ppm"] = random.randint(400, 600)
+        self.campo["hum_suelo"] += random.uniform(-0.5, 0.5)
 
-nova_system = SistemaCentralNOVA()
+control = ControladorNOVA()
 
-HTML_CINEMATIC = """
+HTML_INSTR = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NOVA | Cinematic Engineering</title>
+    <title>NOVA | Real-Time Instrumentation</title>
     <style>
-        :root { --main: #00ffcc; --industrial: #1a1a1a; --tech-yellow: #f1c40f; }
-        body { margin: 0; background: #010101; color: var(--main); font-family: 'Orbitron', sans-serif; overflow: hidden; }
-        .hud-panel { position: absolute; background: rgba(0,0,0,0.85); border: 2px solid var(--main); padding: 20px; backdrop-filter: blur(15px); z-index: 10; width: 320px; }
-        #left-ui { top: 20px; left: 20px; }
-        #right-ui { top: 20px; right: 20px; }
-        h1 { font-size: 16px; margin: 0 0 15px 0; letter-spacing: 2px; border-bottom: 1px solid var(--main); }
-        .data-stream { display: flex; justify-content: space-between; font-size: 12px; margin: 5px 0; }
-        .ingredient { font-size: 11px; color: #888; }
-        .event-alert { color: var(--tech-yellow); animation: blink 1s infinite; font-weight: bold; font-size: 11px; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
-        button { background: var(--main); color: black; border: none; padding: 12px; width: 100%; font-weight: 900; cursor: pointer; margin-top: 15px; font-family: 'Orbitron', sans-serif; }
+        :root { --neon: #00ffcc; --dark: #020202; --panel: rgba(10,10,10,0.9); }
+        body { margin: 0; background: var(--dark); color: var(--neon); font-family: 'Orbitron', sans-serif; overflow: hidden; }
+        .hud { position: absolute; background: var(--panel); border: 1px solid var(--neon); padding: 15px; backdrop-filter: blur(10px); z-index: 100; pointer-events: auto; }
+        #control-panel { top: 20px; left: 20px; width: 340px; }
+        #sensor-grid { top: 20px; right: 20px; width: 300px; }
+        .data-box { border-left: 3px solid var(--neon); padding-left: 10px; margin: 10px 0; }
+        .val { color: white; float: right; }
+        .active-cycle { background: rgba(0, 255, 204, 0.2); border: 1px solid var(--neon); padding: 5px; }
+        button { background: var(--neon); color: black; border: none; padding: 12px; width: 100%; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; }
+        h3 { font-size: 14px; margin: 0 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="left-ui" class="hud-panel">
-        <h1>UNIT: {{ batch }}</h1>
-        <div class="data-stream"><span>DÍA DE PROCESO:</span> <span style="color:white">{{ dia }}/7</span></div>
-        <div class="data-stream"><span>PRESION AGUA:</span> <span style="color:white">{{ presion }} PSI</span></div>
-        <div class="data-stream"><span>SISTEMA PH:</span> <span style="color:white">{{ ph }}</span></div>
-        <div class="data-stream"><span>SISTEMA CE:</span> <span style="color:white">{{ ce }} mS/cm</span></div>
-        <hr style="border:0.1px solid #333">
+    <div id="control-panel" class="hud">
+        <h3>DASHBOARD PRINCIPAL</h3>
+        <div class="data-box active-cycle">CICLO ACTUAL: <span class="val">DÍA {{ dia }}</span></div>
+        
         {% if dia == 0 %}
-            <h2>📦 CARGA DE INGREDIENTES</h2>
-            {% for ing, cant in receta.items() %}
-            <div class="ingredient">{{ ing }}: <span style="color:white">{{ cant }}</span></div>
-            {% endfor %}
+        <h3>📦 LOGÍSTICA DE CARGA</h3>
+        {% for k, v in receta.items() %}
+        <div class="data-box">{{ k }}: <span class="val">{{ v }} kg</span></div>
+        {% endfor %}
+        {% elif dia == 7 %}
+        <h3 style="color:#f1c40f">🚚 FASE DE DESPACHO</h3>
+        <div class="data-box">ESTADO: <span class="val">BANDA ACTIVA</span></div>
         {% else %}
-            <h2>📊 MONITOREO BIOMASA</h2>
-            <div class="event-alert">
-                {% if dia == 4 %}
-                    >> BIO-DEFENSA NEEM/AJO ACTIVA
-                {% elif dia == 7 %}
-                    >> COSECHA Y DESPACHO EN CURSO
-                {% else %}
-                    CRECIMIENTO NOMINAL
-                {% endif %}
-            </div>
+        <h3>🧬 BIOTECNOLOGÍA</h3>
+        <div class="data-box">ESTADO: <span class="val">CRECIMIENTO</span></div>
+        <div class="data-box">SUPLEMENTO: <span class="val">{{ 'NEEM/AJO' if dia == 4 else 'NPK BASE' }}</span></div>
         {% endif %}
-        <button onclick="location.reload()">AVANZAR CICLO DE TIEMPO (24H)</button>
+        
+        <button onclick="window.location.href='/'">AVANZAR CICLO</button>
     </div>
 
-    <div id="right-ui" class="hud-panel">
-        <h1>POTRERO | FIELD-LINK</h1>
-        <div class="data-stream"><span>HUMEDAD SUELO:</span> <span style="color:white">{{ humedad }}%</span></div>
-        <div class="data-stream"><span>TEMP SUELO:</span> <span style="color:white">{{ t_suelo }} °C</span></div>
-        <div class="data-stream"><span>C-ORGÁNICO:</span> <span style="color:white">{{ carbono }} TON/HA</span></div>
-        <div class="event-alert" style="margin-top:10px;">{{ "HATO PROTEGIDO SISTÉMICAMENTE" if dia >= 4 else "HATO EN MONITOREO" }}</div>
+    <div id="sensor-grid" class="hud">
+        <h3>TELEMETRÍA REAL</h3>
+        <div class="data-box">PH AGUA: <span class="val">{{ s.ph }}</span></div>
+        <div class="data-box">COND. ELÉC: <span class="val">{{ s.ce }} mS</span></div>
+        <div class="data-box">CAUDAL: <span class="val">{{ s.caudal }} L/min</span></div>
+        <div class="data-box">CO2: <span class="val">{{ s.co2_ppm }} PPM</span></div>
+        <hr>
+        <h3>FIELD-LINK (POTRERO)</h3>
+        <div class="data-box">HUM. SUELO: <span class="val">{{ c.hum_suelo|round(1) }}%</span></div>
+        <div class="data-box">CARBONO: <span class="val">{{ c.carbono }} T</span></div>
     </div>
 
     <script>
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // --- ENTORNO ---
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0x050505}));
-        ground.rotation.x = -Math.PI/2; ground.position.y = -8;
-        scene.add(ground);
-
-        // --- INVERNADERO INDUSTRIAL ---
-        const greenCore = new THREE.Group();
-        const frame = new THREE.BoxGeometry(7, 16, 7);
-        const frameMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.1 });
-        greenCore.add(new THREE.Mesh(frame, frameMat));
-        
+        // --- INVERNADERO ---
+        const tower = new THREE.Group();
         for(let i=0; i<10; i++) {
-            const h = i * 1.6 - 7;
-            // Pisos Metálicos
-            const piso = new THREE.Mesh(new THREE.BoxGeometry(6, 0.1, 6), new THREE.MeshStandardMaterial({color: (i == {{ dia }}) ? 0x00ffcc : 0x1a1a1a, metalness: 1}));
-            piso.position.y = h;
-            greenCore.add(piso);
+            const is_active = (i == {{ dia }});
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: is_active ? 0x00ffcc : 0x111111,
+                emissive: is_active ? 0x00ffcc : 0x000000,
+                emissiveIntensity: is_active ? 0.5 : 0
+            });
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(6, 0.1, 6), floorMat);
+            floor.position.y = i * 1.6 - 7;
+            tower.add(floor);
             
-            // Forraje Dinámico
-            const grasGeo = new THREE.BoxGeometry(5.5, ({{ dia }} * 0.1) + 0.1, 5.5);
-            const grass = new THREE.Mesh(grasGeo, new THREE.MeshPhongMaterial({color: 0x00aa00}));
-            grass.position.y = h + (({{ dia }} * 0.1) + 0.1)/2;
-            greenCore.add(grass);
-
-            // SISTEMA DE AGUA: Tuberías de Riego (Visibles)
-            const pipeGeo = new THREE.CylinderGeometry(0.05, 0.05, 6);
-            const pipeMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 1 });
-            const pipe = new THREE.Mesh(pipeGeo, pipeMat);
+            // Tuberías
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 6), new THREE.MeshStandardMaterial({color:0x888888}));
             pipe.rotation.z = Math.PI/2;
-            pipe.position.set(0, h + 1.2, -2.8);
-            greenCore.add(pipe);
+            pipe.position.set(0, floor.position.y + 1.2, -2.8);
+            tower.add(pipe);
         }
-        scene.add(greenCore);
+        scene.add(tower);
 
-        // --- PANELES SOLARES (TECHO) ---
-        const solar = new THREE.Mesh(new THREE.BoxGeometry(8, 0.1, 8), new THREE.MeshStandardMaterial({color: 0x001133, metalness: 1}));
-        solar.position.y = 8.5;
-        scene.add(solar);
+        // --- ANIMAL MEJORADO ---
+        const cow = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(3.5, 2.2, 1.8), new THREE.MeshStandardMaterial({color: 0x4b2c20}));
+        const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({color: 0x4b2c20}));
+        head.position.set(2, 1, 0);
+        const legGeo = new THREE.CylinderGeometry(0.2, 0.15, 1.5);
+        for(let x of [-1, 1]) for(let z of [-0.5, 0.5]) {
+            const leg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({color:0x222222}));
+            leg.position.set(x*1.2, -1.5, z);
+            body.add(leg);
+        }
+        cow.add(body, head);
+        cow.position.set(25, -6, 0);
+        scene.add(cow);
 
-        // --- ROBOT STACKER (CINEMÁTICA REALISTA) ---
-        const robot = new THREE.Group();
-        robot.add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 1.5), new THREE.MeshStandardMaterial({color: 0xf1c40f})));
-        robot.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), new THREE.MeshStandardMaterial({color: 0x444444})));
+        // --- ROBOT STACKER ---
+        const robot = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 1.5), new THREE.MeshStandardMaterial({color: 0xf1c40f}));
         scene.add(robot);
 
-        // --- LOGÍSTICA DE CAMPO (DÍA 7) ---
-        const beltMat = new THREE.MeshStandardMaterial({color: 0x333333, metalness: 1});
-        const conveyor = new THREE.Mesh(new THREE.BoxGeometry(20, 0.2, 2), beltMat);
-        conveyor.position.set(13, -7.8, 0);
-        scene.add(conveyor);
-
-        const trough = new THREE.Mesh(new THREE.BoxGeometry(3, 1, 3), new THREE.MeshStandardMaterial({color: 0x444444}));
-        trough.position.set(23, -7.5, 0);
-        scene.add(trough);
-
-        // Animal Vacuno (Modelo Industrial)
-        const animal = new THREE.Group();
-        animal.add(new THREE.Mesh(new THREE.BoxGeometry(3, 2, 1.5), new THREE.MeshStandardMaterial({color: 0x4b2c20}))); // Cuerpo
-        animal.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.5), new THREE.MeshStandardMaterial({color: 0x4b2c20}))); // Cuello
-        animal.position.set(30, -7, 0); // Posición inicial lejana
-        scene.add(animal);
-
-        // Bandeja de Cosecha
-        const trayHarvest = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.2, 2.5), new THREE.MeshPhongMaterial({color: 0x00ff00}));
-        trayHarvest.position.set(4, -7.6, 0); trayHarvest.visible = false;
-        scene.add(trayHarvest);
-
-        // --- ILUMINACIÓN ---
+        // Luces
         const light = new THREE.PointLight(0xffffff, 1.5); light.position.set(10, 20, 10);
-        scene.add(light, new THREE.AmbientLight(0x404040, 1));
-
-        camera.position.set(25, 10, 25); camera.lookAt(0, 0, 0);
+        scene.add(light, new THREE.AmbientLight(0x404040));
+        camera.position.set(28, 12, 28); camera.lookAt(0, 0, 0);
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Cinemática Robot Stacker (Subida e Inserción)
-            const currentFloorH = ({{ dia }} * 1.6 - 7);
-            robot.position.y += (currentFloorH + 0.4 - robot.position.y) * 0.05;
+            // Cinemática Robot
+            robot.position.y = ({{ dia }} * 1.6 - 6.6);
             robot.position.x = -4.5;
-            // Simulación de movimiento de brazo (extensión en Z)
-            robot.position.z = Math.sin(Date.now() * 0.005) * 2;
+            robot.position.z = Math.sin(Date.now()*0.002) * 2.5;
 
-            // --- ANIMACIÓN DE COSECHA (DÍA 7) ---
             if ({{ dia }} == 7) {
-                // 1. Zoom al potrero
-                camera.position.lerp(new THREE.Vector3(35, 5, 20), 0.02);
-                camera.lookAt(20, -5, 0);
-
-                // 2. Mover bandeja
-                trayHarvest.visible = true;
-                if(trayHarvest.position.x < 22) trayHarvest.position.x += 0.1;
-
-                // 3. Animal se acerca y come
-                if(animal.position.x > 25) {
-                    animal.position.x -= 0.05;
-                } else {
-                    // Animación de ingesta
-                    animal.rotation.x = Math.sin(Date.now() * 0.01) * 0.1;
-                    trayHarvest.scale.lerp(new THREE.Vector3(0,0,0), 0.005); // Pasto desaparece
-                }
+                cow.position.x += (20 - cow.position.x) * 0.05;
+                head.rotation.x = Math.sin(Date.now()*0.01) * 0.3;
             } else {
-                scene.rotation.y += 0.001; // Rotación lenta normal
+                scene.rotation.y += 0.001;
+                cow.position.x = 25;
             }
-
             renderer.render(scene, camera);
         }
         animate();
@@ -205,18 +155,9 @@ HTML_CINEMATIC = """
 """
 
 @app.route('/')
-def inicio():
-    nova_system.procesar()
-    return render_template_string(HTML_CINEMATIC, 
-                                 batch=nova_system.batch_id, 
-                                 dia=nova_system.dia_ciclo,
-                                 ph=nova_system.nutrientes_ph,
-                                 ce=nova_system.nutrientes_ce,
-                                 presion=nova_system.presion_hidraulica,
-                                 receta=nova_system.receta,
-                                 humedad=round(nova_system.humedad_suelo, 1),
-                                 t_suelo=round(nova_system.temp_suelo, 1),
-                                 carbono=nova_system.carbono_suelo_ton)
+def home():
+    control.update()
+    return render_template_string(HTML_INSTR, dia=control.dia, s=control.sensores, c=control.campo, receta=control.receta)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
