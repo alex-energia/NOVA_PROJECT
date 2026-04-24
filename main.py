@@ -10,28 +10,21 @@ class ControladorNOVA:
     def reset(self):
         self.dia = 0
         self.batch_id = f"NOVA-X-{random.randint(100,999)}"
-        # Instrumentación Invernadero (Ampliada)
         self.inv = {
             "ph": 5.9, "ce": 1.8, "co2": 450, "par": 0, "tanque": 100,
-            "presion": 45.2, "mg": 15, "k": 20, "ca": 12, "hum_foliar": 85,
-            "peso_bandeja": 12.5  # Peso inicial en kg (semilla + bandeja)
+            "presion": 45.2, "peso": 12.5, "hum_foliar": 85
         }
-        # Telemetría Potrero
         self.pot = {
-            "hum": 22.4, "ndvi": 0.65, "ch4": 0, "h2o_save": 0, 
-            "carbono": 142.5, "evapo": 4.1, "nitrogeno": 18.2
+            "h2o_save": 0, "ch4": 0, "ndvi": 0.65
         }
-        self.receta = {"Maíz": "105kg", "Cebada": "15kg", "Avena": "10kg", "Bio": "2kg"}
+        self.receta = {"Maíz": "105kg", "Cebada": "15kg", "Avena": "10kg"}
 
     def update(self):
         if self.dia < 7:
             self.dia += 1
-            self.inv["par"] = random.randint(350, 650)
+            self.inv["peso"] = round(12.5 + (self.dia * 9.2), 1)
             self.pot["h2o_save"] += 850
             self.pot["ch4"] += 2.8
-            self.inv["tanque"] -= 4
-            # Incremento de peso por biomasa (crecimiento)
-            self.inv["peso_bandeja"] = round(12.5 + (self.dia * 8.4), 2)
         else:
             self.reset()
 
@@ -40,200 +33,175 @@ ctrl = ControladorNOVA()
 @app.route('/')
 def index():
     if request.args.get('reset'): ctrl.reset()
-    return render_template_string(HTML_V17, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, rec=ctrl.receta, bid=ctrl.batch_id)
+    return render_template_string(HTML_V18, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, rec=ctrl.receta, bid=ctrl.batch_id)
 
 @app.route('/next')
 def next_step():
     ctrl.update()
-    return render_template_string(HTML_V17, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, rec=ctrl.receta, bid=ctrl.batch_id)
+    return render_template_string(HTML_V18, d=ctrl.dia, inv=ctrl.inv, pot=ctrl.pot, rec=ctrl.receta, bid=ctrl.batch_id)
 
-HTML_V17 = """
+HTML_V18 = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NOVA v17 | Engineering Mode</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600;900&display=swap" rel="stylesheet">
+    <title>NOVA v18 | SCADA Digital Twin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Inter:wght@300;700&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #00ffcc; --bg: #020202; --panel: rgba(8, 8, 8, 0.98); --alert: #ff3333; }
+        :root { --neon: #00ffcc; --alert: #ff0055; --bg: #000; }
         body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; }
         
-        .hud { position: absolute; background: var(--panel); border: 1px solid rgba(0, 255, 204, 0.4); 
-               padding: 22px; backdrop-filter: blur(20px); border-radius: 4px; z-index: 100; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
+        /* Estilo SCADA */
+        .hud { position: absolute; background: rgba(5, 10, 10, 0.9); border: 2px solid var(--neon); 
+               padding: 20px; backdrop-filter: blur(10px); border-radius: 4px; z-index: 100; box-shadow: 0 0 20px rgba(0,255,204,0.2); }
+        #ui-left { top: 20px; left: 20px; width: 340px; }
+        #ui-right { top: 20px; right: 20px; width: 300px; cursor: pointer; }
         
-        #ui-left { top: 20px; left: 20px; width: 350px; }
-        #ui-right { top: 20px; right: 20px; width: 310px; }
+        h1, h2 { font-family: 'Orbitron', sans-serif; font-size: 12px; color: var(--neon); letter-spacing: 2px; text-transform: uppercase; margin: 0 0 15px 0; }
+        .stat { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.1); }
+        .val { font-weight: 700; color: #fff; }
         
-        h2 { font-size: 11px; color: var(--neon); letter-spacing: 3px; text-transform: uppercase; margin: 0 0 15px 0; border-left: 3px solid var(--neon); padding-left: 10px; }
-        .stat { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
-        .val { font-weight: 700; color: #fff; text-shadow: 0 0 5px var(--neon); }
-        
+        /* Gráfica Flotante */
+        #water-graph { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                       width: 400px; height: 250px; background: rgba(0,20,20,0.95); border: 2px solid #fff; z-index: 1000; padding: 20px; }
+
         button { background: var(--neon); color: #000; border: none; padding: 15px; width: 100%; border-radius: 2px; 
-                 font-weight: 900; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.2s; letter-spacing: 1px; }
+                 font-family: 'Orbitron'; font-weight: 900; cursor: pointer; margin-top: 10px; transition: 0.3s; }
         button:hover { background: #fff; box-shadow: 0 0 30px var(--neon); }
-        
-        .alert-box { border: 1px solid var(--alert); color: var(--alert); padding: 8px; font-size: 10px; font-weight: 900; text-align: center; margin-top: 10px; border-radius: 4px; }
+
+        /* Etiquetas 3D */
+        .tag { position: absolute; background: rgba(0,0,0,0.8); border: 1px solid var(--neon); padding: 5px; font-size: 10px; color: var(--neon); pointer-events: none; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div id="ui-left" class="hud">
-        <h2>NOVA CORE UNIT | {{ bid }}</h2>
-        <div class="stat">ESTADO DEL CICLO: <span class="val">DÍA {{ d }} / 7</span></div>
-        <div class="stat">PESO EN BANDEJA: <span class="val">{{ inv.peso_bandeja }} KG</span></div>
-        
-        <hr style="opacity:0.1; margin: 15px 0;">
-        
-        {% if d == 0 %}
-            <div style="color: #f1c40f; font-size: 11px; margin-bottom:10px;">RECETA DE CARGA ACTIVA</div>
-            {% for k,v in rec.items() %}<div class="stat">{{k}}: <span class="val">{{v}}</span></div>{% endfor %}
-        {% else %}
-            <div style="color: var(--neon); font-size: 11px; margin-bottom:10px;">PROYECCIÓN DE CRECIMIENTO</div>
-            <div class="stat">BIOMASA ESTIMADA: <span class="val">{{ (d * 11.5)|round(1) }} KG</span></div>
-            <div class="stat">ALTURA FOLIAR: <span class="val">{{ (d * 4.3)|round(1) }} CM</span></div>
-        {% endif %}
-
-        <button onclick="location.href='/next'">{{ "INICIAR COSECHA" if d == 6 else "AVANZAR DÍA" if d < 7 else "REINICIAR PROCESO" }}</button>
-        <button style="background:#1a1a1a; color:#555; font-size:9px;" onclick="location.href='/?reset=1'">HARD RESET</button>
-        
-        {% if inv.ph > 6.0 %}<div class="alert-box">ALERTA: PH FUERA DE RANGO</div>{% endif %}
+        <h1>UNIT CONTROL | {{ bid }}</h1>
+        <div class="stat">MODO: <span class="val">{{ "COSECHA" if d == 7 else "GROWTH_SCADA" }}</span></div>
+        <div class="stat">DÍA: <span class="val">{{ d }} / 7</span></div>
+        <button onclick="location.href='/next'">EJECUTAR AVANCE CICLO</button>
+        <button style="background:#222; color:#555; font-size:10px;" onclick="location.href='/?reset=1'">RESET COLD BOOT</button>
     </div>
 
-    <div id="ui-right" class="hud">
-        <h2>INSTRUMENTACIÓN IV</h2>
+    <div id="ui-right" class="hud" onclick="document.getElementById('water-graph').style.display='block'">
+        <h2>TELEMETRÍA (CLICK PARA GRÁFICA H2O)</h2>
+        <div class="stat">H2O SAVE: <span class="val">{{ pot.h2o_save }} L</span></div>
+        <div class="stat">PESO: <span class="val">{{ inv.peso }} kg</span></div>
+        <div class="stat">CO2: <span class="val">{{ inv.co2 }} ppm</span></div>
         <div class="stat">HUM. FOLIAR: <span class="val">{{ inv.hum_foliar }}%</span></div>
-        <div class="stat">NIVEL TANQUE: <span class="val">{{ inv.tanque }}%</span></div>
-        <div class="stat">PRESIÓN NEB.: <span class="val">{{ inv.presion }} PSI</span></div>
-        <div class="stat">LUZ PAR: <span class="val">{{ inv.par }} µmol</span></div>
-        <hr style="opacity:0.1">
-        <h2>FIELD-LINK (POTRERO)</h2>
-        <div class="stat">AHORRO H2O: <span class="val">{{ pot.h2o_save }} L</span></div>
-        <div class="stat">METANO RED.: <span class="val">{{ pot.ch4 }} KG</span></div>
-        <div class="stat">NDVI VIGOR: <span class="val">{{ pot.ndvi }}</span></div>
-        <div class="stat">NITRÓGENO: <span class="val">{{ pot.nitrogeno }} mg/kg</span></div>
+    </div>
+
+    <div id="water-graph" onclick="this.style.display='none'">
+        <h2>AHORRO HÍDRICO ACUMULADO (L)</h2>
+        <div style="display: flex; align-items: flex-end; height: 150px; gap: 10px;">
+            {% for i in range(d + 1) %}
+            <div style="background: var(--neon); width: 30px; height: {{ i * 20 + 10 }}px;"></div>
+            {% endfor %}
+        </div>
+        <p style="font-size: 10px; margin-top: 20px;">Total: {{ pot.h2o_save }} Litros ahorrados vs agricultura tradicional.</p>
+        <p style="font-size: 9px; color: #888;">[ CLICK PARA CERRAR ]</p>
     </div>
 
     <script>
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x010101);
-        const camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.1, 2000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+        scene.background = new THREE.Color(0x000000);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // --- ILUMINACIÓN INDUSTRIAL ---
-        const amb = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(amb);
-        const point = new THREE.PointLight(0x00ffcc, 1, 100);
-        point.position.set(10, 20, 10);
-        scene.add(point);
+        // --- TORRE SCADA BRUTAL ---
+        const tower = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness: 1, roughness: 0.1});
+        const neonMat = new THREE.MeshBasicMaterial({color: 0x00ffcc});
 
-        // --- PISO TECNOLÓGICO ---
-        const grid = new THREE.GridHelper(200, 80, 0x00ffcc, 0x111111);
-        grid.position.y = -10;
-        scene.add(grid);
-
-        // --- CONSTRUCCIÓN DE TORRE (REFUERZO VISUAL) ---
-        const towerGroup = new THREE.Group();
-        const frameMat = new THREE.MeshStandardMaterial({color: 0x444444, metalness: 1, roughness: 0.1});
-        
-        // Vigas de Acero Inoxidable (Visibles)
-        for(let x of [-4, 4]) {
-            for(let z of [-4, 4]) {
-                const beam = new THREE.Mesh(new THREE.BoxGeometry(0.4, 25, 0.4), frameMat);
-                beam.position.set(x, 2, z);
-                towerGroup.add(beam);
+        // Vigas Maestro (Exoesqueleto Brillante)
+        for(let x of [-3.5, 3.5]) {
+            for(let z of [-3.5, 3.5]) {
+                const beam = new THREE.Mesh(new THREE.BoxGeometry(0.3, 24, 0.3), metalMat);
+                beam.position.set(x, 4, z);
+                tower.add(beam);
+                
+                const edge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 24.1, 0.05), neonMat);
+                edge.position.set(x, 4, z);
+                tower.add(edge);
             }
         }
 
-        // Pisos, Sensores de Carga y Forraje
+        // Pisos y Elementos SCADA
+        const floors = [];
         for(let i=0; i<10; i++){
-            const h = i * 2.5 - 8;
-            const active = (i == {{ d }});
+            const h = i * 2.4 - 8;
+            const floorGroup = new THREE.Group();
             
-            // Placa del Piso
-            const floor = new THREE.Mesh(new THREE.BoxGeometry(7, 0.2, 7), new THREE.MeshStandardMaterial({color: 0x222222}));
-            floor.position.y = h;
-            towerGroup.add(floor);
+            // Bandeja
+            const tray = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 6.5), metalMat);
+            tray.position.y = h;
+            floorGroup.add(tray);
 
-            // Célula de Carga (Load Cell) - Pequeño cilindro rojo bajo la bandeja
-            const loadCell = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3), new THREE.MeshBasicMaterial({color: 0xff3333}));
-            loadCell.position.set(0, h + 0.2, 0);
-            towerGroup.add(loadCell);
+            // Forraje (Crecimiento)
+            const hG = ({{ d }} * 0.28) + 0.1;
+            const grass = new THREE.Mesh(new THREE.BoxGeometry(6, hG, 6), 
+                          new THREE.MeshStandardMaterial({color: ({{d}}==0?0x332211:0x00ff44)}));
+            grass.position.y = h + hG/2;
+            floorGroup.add(grass);
 
-            // Forraje Dinámico (Se vuelve verde y alto)
-            const gH = ({{ d }} * 0.3) + 0.1;
-            const grass = new THREE.Mesh(new THREE.BoxGeometry(6.5, gH, 6.5), 
-                          new THREE.MeshStandardMaterial({
-                              color: ({{d}} == 0 ? 0x3d2b1f : 0x00ff66),
-                              emissive: (active ? 0x00ff66 : 0x000000),
-                              emissiveIntensity: 0.2
-                          }));
-            grass.position.y = h + gH/2 + 0.3;
-            towerGroup.add(grass);
-            
-            if(active){
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(5, 0.05, 16, 100), new THREE.MeshBasicMaterial({color: 0x00ffcc}));
-                ring.rotation.x = Math.PI/2;
-                ring.position.y = h;
-                towerGroup.add(ring);
-            }
+            tower.add(floorGroup);
+            floors.push({group: floorGroup, y: h});
         }
-        scene.add(towerGroup);
+        scene.add(tower);
 
-        // --- ANIMAL (MEJORADO ORGANICAMENTE) ---
-        const cow = new THREE.Group();
-        const cBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.9, 2.2, 12, 24), new THREE.MeshStandardMaterial({color: 0x3d2b1f}));
-        cBody.rotation.z = Math.PI/2;
-        const cNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.2), new THREE.MeshStandardMaterial({color: 0x3d2b1f}));
-        cNeck.position.set(1.8, 0.6, 0); cNeck.rotation.z = -Math.PI/4;
-        const cHead = new THREE.Mesh(new THREE.SphereGeometry(0.7, 24, 24), new THREE.MeshStandardMaterial({color: 0x3d2b1f}));
-        cHead.position.set(2.5, 1, 0);
-        cow.add(cBody, cNeck, cHead);
-        cow.position.set(40, -8.5, 0);
-        scene.add(cow);
+        // --- SISTEMA DE GOTEO (PARTÍCULAS) ---
+        const dripCount = 50;
+        const drips = new THREE.Group();
+        for(let i=0; i<dripCount; i++){
+            const drip = new THREE.Mesh(new THREE.SphereGeometry(0.02), new THREE.MeshBasicMaterial({color:0x00ffff}));
+            drips.add(drip);
+        }
+        scene.add(drips);
 
-        // --- BANDA TRANSPORTADORA ---
-        const belt = new THREE.Mesh(new THREE.BoxGeometry(35, 0.4, 4), new THREE.MeshStandardMaterial({color: 0x111111, metalness: 1}));
-        belt.position.set(20, -9.8, 0);
-        scene.add(belt);
+        // --- ANIMAL ---
+        const animal = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.8, 2, 4, 16), new THREE.MeshStandardMaterial({color: 0x331a00}));
+        body.rotation.z = Math.PI/2;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.6), new THREE.MeshStandardMaterial({color: 0x331a00}));
+        head.position.set(1.8, 0.6, 0);
+        animal.add(body, head);
+        animal.position.set(35, -8, 0);
+        scene.add(animal);
 
-        const trayHarvest = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 3), new THREE.MeshStandardMaterial({color: 0x00ff66}));
-        trayHarvest.position.set(5, -9.5, 0);
-        trayHarvest.visible = ({{ d }} == 7);
-        scene.add(trayHarvest);
-
-        camera.position.set(30, 15, 30);
+        // Iluminación
+        const l1 = new THREE.PointLight(0x00ffcc, 2, 50); l1.position.set(10, 10, 10);
+        scene.add(l1, new THREE.AmbientLight(0xffffff, 0.3));
 
         function animate() {
             requestAnimationFrame(animate);
             const time = Date.now() * 0.001;
 
             if ({{ d }} < 7) {
-                const targetY = ({{ d }} * 2.5 - 8);
-                // Zoom dinámico de inspección (Más cerca y angulado)
-                camera.position.lerp(new THREE.Vector3(-14, targetY + 4, 14), 0.04);
-                camera.lookAt(0, targetY, 0);
+                const ty = floors[{{ d }}].y;
+                // ZOOM INTRUSIVO
+                camera.position.lerp(new THREE.Vector3(-14, ty + 4, 14), 0.05);
+                camera.lookAt(0, ty, 0);
+
+                // Animación de Goteo
+                drips.children.forEach((d, i) => {
+                    d.position.y = ty + 2 - ( (time + i*0.1) % 1 ) * 2;
+                    d.position.x = Math.sin(i) * 2;
+                    d.position.z = Math.cos(i) * 2;
+                    d.visible = true;
+                });
             } else {
-                // Día 7: Despacho Global
-                camera.position.lerp(new THREE.Vector3(45, 18, 45), 0.02);
+                // DESPACHO
+                camera.position.lerp(new THREE.Vector3(45, 15, 45), 0.03);
                 camera.lookAt(20, -5, 0);
-                if(trayHarvest.position.x < 38) trayHarvest.position.x += 0.25;
-                if(cow.position.x > 39) cow.position.x -= 0.1;
-                cHead.rotation.x = Math.sin(time * 7) * 0.2;
+                drips.children.forEach(d => d.visible = false);
+                if(animal.position.x > 32) animal.position.x -= 0.1;
+                head.rotation.x = Math.sin(time*8)*0.2;
             }
+
             renderer.render(scene, camera);
         }
         animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
-"""
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
