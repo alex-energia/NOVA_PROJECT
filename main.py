@@ -1,135 +1,129 @@
 import datetime
 import random
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, jsonify
 
 app = Flask(__name__)
 
-class MotorNova:
+class SistemaCentralNOVA:
     def __init__(self):
-        self.lote = "NOVA-CORE-V8"
-        self.dia = 0
-        self.altura = 0
-        self.status = "SISTEMA OPERATIVO"
-        self.energia_acumulada = 0
-
-    def ciclo(self):
-        self.dia = (self.dia + 1) if self.dia < 7 else 0
-        self.altura = self.dia * 35.7
-        self.energia_acumulada += random.uniform(8.5, 12.0)
+        self.nodos = 25
+        self.nodo_activo = 1
+        self.dia_ciclo = 0
+        self.presion_hidraulica = 45.5 # PSI
+        self.flujo_nutrientes = 1.2 # L/min
+        self.batch_id = "B-PRO-001"
         
-        estados = [
-            "DÍA 0: ACTIVACIÓN", "DÍA 1: GERMINACIÓN", "DÍA 2: RAÍZ",
-            "DÍA 3: FOTOSÍNTESIS", "DÍA 4: BIO-DEFENSA", "DÍA 5: BIOMASA",
-            "DÍA 6: MADURACIÓN", "DÍA 7: DESPACHO"
-        ]
-        self.status = estados[self.dia]
+    def procesar(self):
+        self.dia_ciclo = (self.dia_ciclo + 1) if self.dia_ciclo < 7 else 0
+        self.presion_hidraulica = round(random.uniform(42.0, 48.0), 1)
+        self.flujo_nutrientes = round(random.uniform(1.0, 1.5), 2)
 
-nova = MotorNova()
+nova_system = SistemaCentralNOVA()
 
-HTML_V8 = """
+HTML_ENTERPRISE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NOVA INSTRUMENTACIÓN 3D</title>
+    <title>NOVA | Enterprise Control</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
-        #ui-layer { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,25,0,0.9); 
-                    padding: 20px; border: 1px solid #00ff00; color: #00ff00; width: 350px; }
-        .sensor-read { display: flex; justify-content: space-between; font-size: 13px; margin: 4px 0; }
-        .solar-tag { color: #f1c40f; font-weight: bold; }
-        button { background: #00ff00; color: #000; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        :root { --main-color: #00ffcc; --bg-dark: #050505; }
+        body { margin: 0; background: var(--bg-dark); color: var(--main-color); font-family: 'Inter', sans-serif; overflow: hidden; }
+        #overlay-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .panel { position: absolute; background: rgba(10, 10, 10, 0.85); border: 1px solid var(--main-color); 
+                  backdrop-filter: blur(15px); padding: 20px; pointer-events: auto; }
+        #left-panel { top: 20px; left: 20px; width: 320px; }
+        #bottom-panel { bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; height: 60px; display: flex; align-items: center; justify-content: space-around; }
+        .node-dot { width: 10px; height: 10px; border-radius: 50%; background: #222; }
+        .node-active { background: var(--main-color); box-shadow: 0 0 10px var(--main-color); }
+        h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 15px 0; opacity: 0.8; }
+        .value { color: white; font-weight: bold; float: right; }
+        button { background: var(--main-color); color: black; border: none; padding: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: white; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="ui-layer">
-        <h2 style="margin:0">🛰️ N.O.V.A. CORE v8.0</h2>
-        <div class="sensor-read"><span>ESTADO ACTUAL:</span> <span style="color:white">{{ status }}</span></div>
-        <div class="sensor-read"><span>DÍA DE CICLO:</span> <span>{{ dia }}/7</span></div>
-        <div class="sensor-read"><span>ALTURA FORRAJE:</span> <span>{{ altura }} mm</span></div>
-        <hr>
-        <div class="sensor-read"><span class="solar-tag">PANEL SOLAR:</span> <span class="solar-tag">{{ energia }} kWh</span></div>
-        <div class="sensor-read"><span>ROBOT STACKER:</span> <span id="robot-status">OPERANDO</span></div>
-        <button onclick="location.reload()">SIGUIENTE FASE (SIMULAR DÍA)</button>
+    <div id="overlay-ui">
+        <div id="left-panel" class="panel">
+            <h2>N.O.V.A. Mission Control</h2>
+            <div>BATCH: <span class="value">{{ batch }}</span></div>
+            <div>DÍA DE PROCESO: <span class="value">{{ dia }}/7</span></div>
+            <div>PRESIÓN SISTEMA: <span class="value">{{ presion }} PSI</span></div>
+            <div>FLUJO NUTRIENTES: <span class="value">{{ flujo }} L/m</span></div>
+            <hr style="border: 0.5px solid #222; margin: 15px 0;">
+            <div style="font-size: 11px; color: #f1c40f;">BIOTECH STATUS: {{ "INYECCIÓN SISTÉMICA ACTIVA" if dia == 4 else "MONITOREO DE BIOMASA" }}</div>
+            <button onclick="location.reload()">FORZAR CICLO TELEMETRÍA</button>
+        </div>
+        
+        <div id="bottom-panel" class="panel">
+            {% for i in range(1, 26) %}
+                <div class="node-dot {{ 'node-active' if i == 1 else '' }}"></div>
+            {% endfor %}
+            <span style="font-size: 10px; opacity: 0.5;">MULTI-NODE FLEET MANAGEMENT (25 UNITS)</span>
+        </div>
     </div>
 
     <script>
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // --- PANELES SOLARES (TECHO) ---
-        const solarGroup = new THREE.Group();
-        const sGeo = new THREE.BoxGeometry(7, 0.2, 7);
-        const sMat = new THREE.MeshPhongMaterial({ color: 0x001133, specular: 0x0099ff });
-        const solarPanel = new THREE.Mesh(sGeo, sMat);
-        solarPanel.position.y = 8.5;
-        solarGroup.add(solarPanel);
-        scene.add(solarGroup);
+        // --- ILUMINACIÓN CINEMATOGRÁFICA ---
+        const ambLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambLight);
+        const pointLight = new THREE.PointLight(0x00ffcc, 1.5);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
 
-        // --- INVERNADERO Y PISOS COLOREADOS ---
-        const floors = [];
-        const floorColors = [0x222222, 0x111111, 0x003300, 0x006600, 0x00aa00, 0x00ff00, 0x55ff55, 0xaaffaa];
+        // --- CONSTRUCCIÓN DEL CORE INDUSTRIAL ---
+        const greenhouse = new THREE.Group();
         
-        for(let i=0; i<10; i++) {
-            const floorLevel = new THREE.Group();
-            
-            // Estructura de Piso
-            const pGeo = new THREE.BoxGeometry(6, 0.1, 6);
-            const pMat = new THREE.MeshPhongMaterial({ 
-                color: (i == {{ dia }}) ? floorColors[{{ dia }}] : 0x222222,
-                emissive: (i == {{ dia }}) ? 0x002200 : 0x000000
-            });
-            const floor = new THREE.Mesh(pGeo, pMat);
-            floor.position.y = i * 1.5 - 7;
-            floorLevel.add(floor);
-
-            // Bandejas con Forraje
-            const bGeo = new THREE.BoxGeometry(5, ({{ dia }} * 0.05) + 0.1, 5);
-            const bMat = new THREE.MeshPhongMaterial({ color: 0x00aa00 });
-            const bandeja = new THREE.Mesh(bGeo, bMat);
-            bandeja.position.y = floor.position.y + 0.1;
-            floorLevel.add(bandeja);
-
-            scene.add(floorLevel);
-            floors.push(floorLevel);
+        // Estructura de Columnas (Ingeniería)
+        const colGeo = new THREE.CylinderGeometry(0.05, 0.05, 18);
+        const colMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 1 });
+        for(let x of [-3.5, 3.5]) {
+            for(let z of [-3.5, 3.5]) {
+                const col = new THREE.Mesh(colGeo, colMat);
+                col.position.set(x, 0, z);
+                greenhouse.add(col);
+            }
         }
 
-        // --- ROBOT STACKER (CINEMÁTICA) ---
-        const robotGroup = new THREE.Group();
-        const bodyGeo = new THREE.BoxGeometry(1.2, 0.6, 1.2);
-        const bodyMat = new THREE.MeshPhongMaterial({ color: 0xf1c40f });
-        const robotBody = new THREE.Mesh(bodyGeo, bodyMat);
-        
-        const armGeo = new THREE.BoxGeometry(2, 0.2, 0.2);
-        const robotArm = new THREE.Mesh(armGeo, bodyMat);
-        robotArm.position.x = 1.2;
-        
-        robotGroup.add(robotBody);
-        robotGroup.add(robotArm);
-        scene.add(robotGroup);
+        // Pisos de Rejilla Metálica
+        for(let i=0; i<10; i++) {
+            const fGeo = new THREE.BoxGeometry(7, 0.1, 7);
+            const fMat = new THREE.MeshStandardMaterial({ 
+                color: (i == {{ dia }}) ? 0x00ffcc : 0x111111,
+                transparent: true, opacity: 0.9, metalness: 0.8
+            });
+            const floor = new THREE.Mesh(fGeo, fMat);
+            floor.position.y = i * 1.8 - 8;
+            greenhouse.add(floor);
+        }
+        scene.add(greenhouse);
 
-        // --- ILUMINACIÓN ---
-        const light = new THREE.PointLight(0xffffff, 1, 100);
-        light.position.set(10, 10, 10);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
+        // --- ROBOT STACKER ARTICULADO ---
+        const robot = new THREE.Group();
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x111111, metalness: 1}));
+        const laser = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 10), new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.3}));
+        laser.rotation.z = Math.PI/2;
+        laser.position.x = 5;
+        robot.add(chassis, laser);
+        scene.add(robot);
 
-        camera.position.set(15, 8, 15);
+        camera.position.set(22, 10, 22);
         camera.lookAt(0, 0, 0);
 
         function animate() {
             requestAnimationFrame(animate);
+            const targetY = ({{ dia }} * 1.8 - 8);
+            robot.position.y += (targetY - robot.position.y) * 0.05;
+            robot.position.x = -5;
             
-            // Movimiento del Robot entre niveles
-            const targetY = ({{ dia }} * 1.5 - 6.8);
-            robotGroup.position.y += (targetY - robotGroup.position.y) * 0.05;
-            robotGroup.position.x = -3.5;
-            robotGroup.rotation.y += 0.01;
-
-            scene.rotation.y += 0.002;
+            greenhouse.rotation.y += 0.002;
             renderer.render(scene, camera);
         }
         animate();
@@ -140,10 +134,12 @@ HTML_V8 = """
 
 @app.route('/')
 def home():
-    nova.ciclo()
-    return render_template_string(HTML_V8, lote=nova.lote, dia=nova.dia, 
-                                 status=nova.status, altura=round(nova.altura, 2), 
-                                 energia=round(nova.energia_acumulada, 2))
+    nova_system.procesar()
+    return render_template_string(HTML_ENTERPRISE, 
+                                 batch=nova_system.batch_id, 
+                                 dia=nova_system.dia_cycle, 
+                                 presion=nova_system.presion_hidraulica, 
+                                 flujo=nova_system.flujo_nutrientes)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
